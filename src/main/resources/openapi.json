@@ -1,0 +1,92 @@
+{
+  "swagger" : "2.0",
+  "info" : {
+    "description" : "A brand new API with no content.  Go nuts!",
+    "version" : "1.0",
+    "title" : "Task API"
+  },
+  "consumes" : [ "application/json" ],
+  "produces" : [ "application/json" ],
+  "paths" : {
+    "/todo" : {
+      "post" : {
+        "parameters" : [ {
+          "in" : "body",
+          "name" : "body",
+          "required" : false,
+          "schema" : {
+            "$ref" : "#/definitions/Task"
+          }
+        } ],
+        "responses" : {
+          "201" : {
+            "description" : "Task created",
+            "schema" : {
+              "$ref" : "#/definitions/Todo"
+            }
+          }
+        }
+      }
+    },
+    "/todo/{id}" : {
+      "get" : {
+        "description" : "Get a task by ID.",
+        "parameters" : [ ],
+        "responses" : {
+          "200" : {
+            "description" : "Task found for ID",
+            "schema" : {
+              "$ref" : "#/definitions/Todo"
+            }
+          }
+        }
+      },
+      "delete" : {
+        "description" : "Delete a task by ID.",
+        "parameters" : [ ],
+        "responses" : {
+          "200" : {
+            "description" : "Task deleted"
+          },
+          "400" : {
+            "description" : "Task not deleted"
+          }
+        }
+      },
+      "parameters" : [ {
+        "name" : "id",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer",
+        "format" : "int32"
+      } ]
+    }
+  },
+  "definitions" : {
+    "Todo" : {
+      "type" : "object",
+      "properties" : {
+        "id" : {
+          "type" : "integer",
+          "format" : "int32"
+        },
+        "task" : {
+          "type" : "string"
+        },
+        "completed" : {
+          "type" : "boolean"
+        }
+      },
+      "title" : "Root Type for Todo",
+      "description" : "The root of the Todo type's schema.",
+      "example" : "{\n    \"id\": 1,\n    \"task\": \"my task\",\n    \"completed\": false\n}"
+    },
+    "Task" : {
+      "properties" : {
+        "task" : {
+          "type" : "string"
+        }
+      }
+    }
+  }
+}
