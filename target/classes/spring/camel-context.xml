@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd        http://camel.apache.org/schema/spring       http://camel.apache.org/schema/spring/camel-spring.xsd">
+    <bean
+        class="org.apache.camel.component.jackson.ListJacksonDataFormat" id="taskFormat">
+        <property name="unmarshalType" value="io.example.openapi.model.Task"/>
+    </bean>
+    <bean class="io.example.openapi.TaskNoteAggregationStrategy" id="taskNoteAggregationStrategy"/>
     <camelContext id="context-9da96071-5e22-433c-abe6-f7cbfd4b5578" xmlns="http://camel.apache.org/schema/spring">
         <onException>
             <exception>java.lang.Exception</exception>
@@ -28,33 +33,82 @@
                 </route>
             </get>
         </rest>
-        <rest bindingMode="json" enableCORS="true" id="rest-7f77f61c-7958-4e17-990a-e507e4abe274">
-            <post id="post-5777da52-8ffc-45ff-a2b4-f552855c66f2" uri="/todo">
+        <rest bindingMode="json" enableCORS="true" id="restTask">
+            <post id="postTask" uri="/task">
                 <param name="body" required="false" type="body"/>
-                <to uri="direct:rest1"/>
+                <to uri="direct:restPostTask"/>
             </post>
-            <get id="get-f9df5a39-7e8b-49ba-aaa7-47cf0f580280" uri="/todo/{id}">
+            <get id="getTaskById" uri="/task/{id}">
                 <description>Get a task by ID.</description>
-                <to uri="direct:rest2"/>
+                <to uri="direct:restGetTaskById"/>
             </get>
-            <delete id="delete-5ab53772-5deb-41e3-93c8-9b35136c0be6" uri="/todo/{id}">
+            <get id="getTasks" uri="/task">
+                <description>Get a task by ID.</description>
+                <to uri="direct:restGetTasks"/>
+            </get>
+            <get id="getNoteById" uri="/note/{id}">
+                <description>Get a note by ID.</description>
+                <to uri="direct:restGetNoteById"/>
+            </get>
+            <delete id="deleteTask" uri="/task/{id}">
                 <description>Delete a task by ID.</description>
-                <to uri="direct:rest3"/>
+                <to uri="direct:restDeleteTask"/>
             </delete>
         </rest>
-        <route id="route-53e3f985-7168-45a9-a3d4-f3e5cf9dd406">
-            <from id="from-59290234-adb3-4ced-b3a5-db14dd9ed9e2" uri="direct:rest1"/>
-            <to id="to-ee802e8b-653c-4758-b483-00fc6efd9437" uri="direct:501"/>
+        <route id="postTaskRoute">
+            <from id="_from2" uri="direct:restPostTask"/>
+            <to id="_to2" uri="direct:501"/>
         </route>
-        <route id="route-0f3d0354-a733-4fd9-9cdd-829c4526032c">
-            <from id="from-de9a528b-68c9-47dd-b8ac-843c2178ef7b" uri="direct:rest2"/>
-            <to id="to-d3ffe8cb-c89e-4e9b-8f29-90e71dee4bd6" uri="direct:501"/>
+        <route id="getTaskByIdRoute">
+            <from id="_from3" uri="direct:restGetTaskById"/>
+            <to id="_to3" uri="direct:501"/>
         </route>
-        <route id="route-17741e48-c279-4290-9512-b553f939c6a4">
-            <from id="from-c0c9ee1f-a785-4e30-8fbc-961ba9b85c42" uri="direct:rest3"/>
-            <to id="to-0204ae00-bd9c-481e-aff8-6179cc4f1fcd" uri="direct:501"/>
+        <route id="getTasksRoute">
+            <from id="_from1" uri="direct:restGetTasks"/>
+            <to id="_to5" uri="direct:prepareRequest"/>
+            <setHeader headerName="Exchange.HTTP_METHOD" id="_setHeader2">
+                <constant>GET</constant>
+            </setHeader>
+            <setHeader headerName="Exchange.HTTP_PATH" id="_setHeader3">
+                <simple>tasks</simple>
+            </setHeader>
+            <setHeader headerName="Exchange.HTTP_URI" id="_setHeader4">
+                <simple>{{task.service.url}}</simple>
+            </setHeader>
+            <to id="_to1" uri="http4://DUMMY"/>
+            <unmarshal id="_unmarshal1" ref="taskFormat"/>
+            <split id="_split1" parallelProcessing="true">
+                <simple>${body}</simple>
+                <enrich id="_enrich1" strategyRef="taskNoteAggregationStrategy">
+                    <constant>direct:restGetNoteById</constant>
+                </enrich>
+            </split>
         </route>
-        <route id="route-for-unimplemented-operations">
+        <route id="getNoteByIdRoute">
+            <from id="_from6" uri="direct:restGetNoteById"/>
+            <setHeader headerName="id" id="_setHeader5">
+                <simple>${body.noteId}</simple>
+            </setHeader>
+            <to id="_to6" uri="direct:prepareRequest"/>
+            <setHeader headerName="Exchange.HTTP_METHOD" id="_setHeader6">
+                <constant>GET</constant>
+            </setHeader>
+            <setHeader headerName="Exchange.HTTP_PATH" id="_setHeader7">
+                <simple>notes/${header.id}</simple>
+            </setHeader>
+            <setHeader headerName="Exchange.HTTP_URI" id="_setHeader8">
+                <simple>{{note.service.url}}</simple>
+            </setHeader>
+            <to id="_to7" uri="http4://DUMMY"/>
+            <unmarshal id="_unmarshal2">
+                <json library="Jackson" unmarshalTypeName="io.example.openapi.model.Note"/>
+            </unmarshal>
+        </route>
+        <route id="deleteTaskRoute">
+            <from id="_from4" uri="direct:restDeleteTask"/>
+            <to id="_to4" uri="direct:501"/>
+        </route>
+        <route id="unimplementedOperationsRoute">
             <from id="from-for-unimplemented-operations-route" uri="direct:501"/>
             <log id="log-for-unimplemented-operations-route" message="API operation not yet implemented: ${headers.CamelHttpMethod} ${headers.CamelHttpPath}"/>
             <setHeader headerName="Exchange.HTTP_RESPONSE_CODE" id="setHeader-for-unimplemented-operations-route">
@@ -63,6 +117,16 @@
             <setBody id="setBody-for-unimplemented-operations-route">
                 <simple>API operation not implemented: ${headers.CamelHttpMethod} ${headers.CamelHttpPath}</simple>
             </setBody>
+        </route>
+        <route id="requestPreperationRoute">
+            <from id="_from5" uri="direct:prepareRequest"/>
+            <setBody id="_setBody1">
+                <simple>null</simple>
+            </setBody>
+            <removeHeaders id="_removeHeaders1" pattern="CamelHttp*"/>
+            <setHeader headerName="Exchange.CONTENT_TYPE" id="_setHeader1">
+                <simple>MediaType.APPLICATION_JSON_VALUE</simple>
+            </setHeader>
         </route>
     </camelContext>
 </beans>

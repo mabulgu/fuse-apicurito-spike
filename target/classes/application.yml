@@ -5,7 +5,7 @@ camel:
   component:
     servlet:
       mapping:
-        contextPath: /*
+        contextPath: /api/*
 
 # Binding health checks to a different port
 management:
@@ -16,3 +16,11 @@ endpoints:
   enabled: false
   health:
     enabled: true
+    
+task:
+  service:
+    url: http://localhost:3000
+    
+note:
+  service:
+    url: http://localhost:3000
